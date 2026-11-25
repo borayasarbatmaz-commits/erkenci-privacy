@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Erkenci — Davet Bağlantısı</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(180deg, #141B3D, #241F55);
+      color: #F1EFFF;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      max-width: 440px;
+      width: 100%;
+      text-align: center;
+      background: rgba(233, 230, 255, 0.07);
+      border: 1px solid rgba(214, 210, 255, 0.18);
+      border-radius: 26px;
+      padding: 36px 24px;
+    }
+    .brand { color: #FFC94D; font-weight: 700; letter-spacing: 3px; font-size: 18px; }
+    h1 { margin: 14px 0 8px; font-size: 24px; }
+    p { color: #AEABD8; line-height: 1.6; font-size: 15px; margin: 0 0 18px; }
+    .code {
+      display: inline-block;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 5px;
+      color: #FFC94D;
+      background: rgba(255, 201, 77, 0.10);
+      border: 1px solid rgba(255, 201, 77, 0.35);
+      padding: 10px 20px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 14px 20px;
+      border-radius: 999px;
+      background: #FFC94D;
+      color: #2B1E00;
+      font-weight: 700;
+      text-decoration: none;
+      margin-bottom: 10px;
+      border: none;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    .btn.outline {
+      background: transparent;
+      color: #F1EFFF;
+      border: 1px solid rgba(214, 210, 255, 0.28);
+    }
+    .note { font-size: 13px; color: #8F8CB8; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">☀ ERKENCİ</div>
+    <h1 id="title">Erkenci'ye Davet Edildin</h1>
+    <p id="desc">Uygulama yüklüyse otomatik açılacak; yüklü değilse cihazına uygun mağazaya yönlendirileceksin.</p>
+    <div id="codeBox" class="code" style="display:none"></div>
+    <a id="openBtn" class="btn" href="#">Erkenci'de Aç</a>
+    <a id="storeBtn" class="btn outline" href="https://play.google.com/store/apps/details?id=com.erkenci.app">Uygulamayı İndir</a>
+    <button id="copyBtn" class="btn outline" type="button" style="display:none">Davet Kodunu Kopyala</button>
+    <div class="note" id="note">Bağlantı otomatik açılmazsa yukarıdaki butona dokun.</div>
+  </div>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var friend = (params.get('friend') || params.get('code') || '').trim().toUpperCase();
+      var family = (params.get('family') || '').trim().toUpperCase();
+      var isFamily = !!family;
+      var code = isFamily ? family : friend;
+      var deepLink = isFamily
+        ? 'erkenci://family/' + encodeURIComponent(code)
+        : code
+          ? 'erkenci://invite/' + encodeURIComponent(code)
+          : 'erkenci://';
+
+      var ua = navigator.userAgent || '';
+      var isIOS = /iPhone|iPad|iPod/i.test(ua);
+      var playUrl = 'https://play.google.com/store/apps/details?id=com.erkenci.app';
+      var appStoreUrl = 'https://apps.apple.com/search?term=Erkenci';
+      var storeUrl = isIOS ? appStoreUrl : playUrl;
+
+      var titleEl = document.getElementById('title');
+      var descEl = document.getElementById('desc');
+      var codeBox = document.getElementById('codeBox');
+      var openBtn = document.getElementById('openBtn');
+      var storeBtn = document.getElementById('storeBtn');
+      var copyBtn = document.getElementById('copyBtn');
+
+      if (isFamily) {
+        titleEl.textContent = 'Erkenci Aile Grubuna Davet Edildin';
+        descEl.textContent = 'Bağlantı seni otomatik olarak aile grubuna ekleyecek. Uygulama yüklü değilse önce indir, sonra bu bağlantıya tekrar dokun.';
+        openBtn.textContent = 'Aile Grubuna Katıl';
+      } else if (code) {
+        titleEl.textContent = 'Erkenci Arkadaşlık Daveti';
+        descEl.textContent = 'Uygulama yüklüyse arkadaşlık isteğin otomatik olarak eşleşecek. Yüklü değilse önce mağazadan indir.';
+        openBtn.textContent = 'Arkadaş Olarak Ekle';
+      }
+
+      if (code) {
+        codeBox.textContent = code;
+        codeBox.style.display = 'inline-block';
+        copyBtn.style.display = 'block';
+        copyBtn.addEventListener('click', function () {
+          if (navigator.clipboard) navigator.clipboard.writeText(code);
+          copyBtn.textContent = 'Kopyalandı: ' + code;
+        });
+      }
+
+      openBtn.href = deepLink;
+      storeBtn.href = storeUrl;
+      storeBtn.textContent = isIOS ? "App Store'dan İndir" : "Google Play'den İndir";
+
+      // Yüklü uygulamayı hemen açmayı dene; sayfa arka plana geçmezse mağazaya yönlendir.
+      if (code) {
+        var leftPage = false;
+        document.addEventListener('visibilitychange', function () {
+          if (document.hidden) leftPage = true;
+        });
+        window.location.href = deepLink;
+        setTimeout(function () {
+          if (!leftPage && !document.hidden) {
+            window.location.href = storeUrl;
+          }
+        }, 1400);
+      }
+    })();
+  </script>
+</body>
+</html>
